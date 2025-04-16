@@ -1,8 +1,10 @@
 import express from "express";
+import cors from "cors";
 
 const app = express();
 const port = 8000;
 
+app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -22,16 +24,15 @@ const users = {
 const filterUsers = (query) => {
   let filtered = users.users_list;
   if (query.name) {
-    filtered = filtered.filter(user => user.name === query.name);
+    filtered = filtered.filter((user) => user.name === query.name);
   }
   if (query.job) {
-    filtered = filtered.filter(user => user.job === query.job);
+    filtered = filtered.filter((user) => user.job === query.job);
   }
   return filtered;
 };
 
 app.get("/users", (req, res) => {
-  // If any query parameters are provided, use the filter function.
   if (Object.keys(req.query).length > 0) {
     res.send({ users_list: filterUsers(req.query) });
   } else {
@@ -40,7 +41,7 @@ app.get("/users", (req, res) => {
 });
 
 const findUserById = (id) =>
-  users.users_list.find(user => user.id === id);
+  users.users_list.find((user) => user.id === id);
 
 app.get("/users/:id", (req, res) => {
   const id = req.params.id;
@@ -59,18 +60,21 @@ const addUser = (user) => {
 
 app.post("/users", (req, res) => {
   const userToAdd = req.body;
+  if (!userToAdd.id) {
+    userToAdd.id = Math.random().toString(36).substring(2, 9);
+  }
   addUser(userToAdd);
-  res.send();
+  res.status(201).json(userToAdd);
 });
 
 app.delete("/users/:id", (req, res) => {
   const id = req.params.id;
   const initialLength = users.users_list.length;
-  users.users_list = users.users_list.filter(user => user.id !== id);
+  users.users_list = users.users_list.filter((user) => user.id !== id);
   if (users.users_list.length === initialLength) {
     res.status(404).send("Resource not found.");
   } else {
-    res.send("User deleted.");
+    res.status(204).send();
   }
 });
 
