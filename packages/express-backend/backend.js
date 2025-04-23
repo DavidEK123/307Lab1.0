@@ -1,5 +1,14 @@
 import express from "express";
 import cors from "cors";
+import mongoose from "mongoose";
+import User from "./models/User.js";
+
+mongoose
+  .connect(
+    "mongodb+srv://davidikmufc:jomama1@cluster0.zzjaemm.mongodb.net/csc307?retryWrites=true&w=majority"
+  )
+  .then(() => console.log("✅ Connected to MongoDB Atlas"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
 
 const app = express();
 const port = 8000;
@@ -11,70 +20,50 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-const users = {
-  users_list: [
-    { id: "xyz789", name: "Charlie", job: "Janitor" },
-    { id: "abc123", name: "Mac", job: "Bouncer" },
-    { id: "ppp222", name: "Mac", job: "Professor" },
-    { id: "yat999", name: "Dee", job: "Aspiring actress" },
-    { id: "zap555", name: "Dennis", job: "Bartender" }
-  ]
-};
+app.get("/users", async (req, res) => {
+  const { name, job } = req.query;
+  const filter = {};
+  if (name) filter.name = name;
+  if (job)  filter.job  = job;
 
-const filterUsers = (query) => {
-  let filtered = users.users_list;
-  if (query.name) {
-    filtered = filtered.filter((user) => user.name === query.name);
-  }
-  if (query.job) {
-    filtered = filtered.filter((user) => user.job === query.job);
-  }
-  return filtered;
-};
-
-app.get("/users", (req, res) => {
-  if (Object.keys(req.query).length > 0) {
-    res.send({ users_list: filterUsers(req.query) });
-  } else {
-    res.send(users);
+  try {
+    const list = await User.find(filter);
+    res.json({ users_list: list });
+  } catch (err) {
+    res.status(500).send(err);
   }
 });
 
-const findUserById = (id) =>
-  users.users_list.find((user) => user.id === id);
-
-app.get("/users/:id", (req, res) => {
-  const id = req.params.id;
-  const result = findUserById(id);
-  if (!result) {
-    res.status(404).send("Resource not found.");
-  } else {
-    res.send(result);
+app.get("/users/:id", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).send("Resource not found.");
+    }
+    res.json(user);
+  } catch (err) {
+    res.status(500).send(err);
   }
 });
 
-const addUser = (user) => {
-  users.users_list.push(user);
-  return user;
-};
-
-app.post("/users", (req, res) => {
-  const userToAdd = req.body;
-  if (!userToAdd.id) {
-    userToAdd.id = Math.random().toString(36).substring(2, 9);
+app.post("/users", async (req, res) => {
+  try {
+    const newUser = await User.create(req.body);
+    res.status(201).json(newUser);
+  } catch (err) {
+    res.status(400).send(err);
   }
-  addUser(userToAdd);
-  res.status(201).json(userToAdd);
 });
 
-app.delete("/users/:id", (req, res) => {
-  const id = req.params.id;
-  const initialLength = users.users_list.length;
-  users.users_list = users.users_list.filter((user) => user.id !== id);
-  if (users.users_list.length === initialLength) {
-    res.status(404).send("Resource not found.");
-  } else {
-    res.status(204).send();
+app.delete("/users/:id", async (req, res) => {
+  try {
+    const deleted = await User.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).send("Resource not found.");
+    }
+    res.sendStatus(204);
+  } catch (err) {
+    res.status(500).send(err);
   }
 });
 

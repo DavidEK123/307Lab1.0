@@ -5,48 +5,43 @@ import Form from "./Form";
 function MyApp() {
   const [characters, setCharacters] = useState([]);
 
-  function fetchUsers() {
-    return fetch("http://localhost:8000/users");
-  }
+  const fetchUsers = () =>
+    fetch("http://localhost:8000/users");
 
-  function postUser(person) {
-    return fetch("http://localhost:8000/users", {
+  const postUser = (person) =>
+    fetch("http://localhost:8000/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(person)
+      body: JSON.stringify(person),
     });
-  }
 
-  function updateList(person) {
+  const updateList = (person) => {
     postUser(person)
       .then((res) => {
-        if (res.status === 201) {
-          return res.json();
-        } else {
-          throw new Error("Failed to create");
-        }
+        if (res.status === 201) return res.json();
+        throw new Error("Failed to create");
       })
       .then((newUser) =>
-        setCharacters((prevCharacters) => [...prevCharacters, newUser])
+        setCharacters((prev) => [...prev, newUser])
       )
       .catch((error) => console.error(error));
-  }
+  };
 
-  function removeOneCharacter(id) {
+  const removeOneCharacter = (id) => {
     fetch(`http://localhost:8000/users/${id}`, {
-      method: "DELETE"
+      method: "DELETE",
     })
       .then((res) => {
         if (res.status === 204) {
-          setCharacters((prevCharacters) =>
-            prevCharacters.filter((ch) => ch.id !== id)
+          setCharacters((prev) =>
+            prev.filter((ch) => ch._id !== id)
           );
         } else {
           throw new Error("Delete failed");
         }
       })
       .catch((error) => console.error(error));
-  }
+  };
 
   useEffect(() => {
     fetchUsers()
@@ -57,7 +52,10 @@ function MyApp() {
 
   return (
     <div className="container">
-      <Table characterData={characters} removeCharacter={removeOneCharacter} />
+      <Table
+        characterData={characters}
+        removeCharacter={removeOneCharacter}
+      />
       <Form handleSubmit={updateList} />
     </div>
   );
